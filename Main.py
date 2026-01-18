@@ -13,7 +13,9 @@ def main(nbr_pilots, special_pilots, nbr_of_groups, nbr_of_races):
     for race in range(nbr_of_races):
         wk = groups_creation.export_to_excel(race)
     kart_management = KartManagement(wk, nbr_of_races, nbr_pilots, nbr_of_groups, groups)
-    kart_management.manage_karts_per_group()
+    kart_management.deterministic_kart_schedule()
+    for race in range(nbr_of_races):
+        kart_management.test(race)
     kart_management.export_to_excel()
     print(groups)
 
