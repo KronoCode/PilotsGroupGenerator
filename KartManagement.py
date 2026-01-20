@@ -36,49 +36,35 @@ class KartManagement:
     #             karts_used_by_group.clear()
     #     print(self.karts_per_pilot)
 
-    def deterministic_kart_schedule(self):
-        """
-        pilots: list of pilot IDs [1..N]
-        groups_by_race[race][group] = list of pilot IDs
-        Returns: schedule[race][group] = {pilot: kart}
-        
-        Constraints:
-            - Each pilot uses each kart only once across all races
-            - No kart repeats within a group
-            - Groups run sequentially, so karts can be reused across groups in the same race
-        """
-        # Number of karts per group = group size
+    def deterministic_kart_schedule(self, seed=42):
+        random.seed(seed)
+
         K = len(self.groups[0][0])
-        pilots = pilots = list(range(1, self.nbr_of_pilots +1))  # [1, 2, 3, ..., 100]
+        pilots = list(range(1, self.nbr_of_pilots + 1))
+        pilot_used_karts = {p: set() for p in pilots}
 
+        self.karts_per_pilot = []
 
-        # Track which karts each pilot has already used
-        pilot_used_karts = {pilot: set() for pilot in pilots}
-
-        for race_idx, race_groups in enumerate(self.groups):
+        for race_groups in self.groups:
             race_assignment = []
             for group in race_groups:
                 group_map = {}
-                group_used_karts = set()  # track karts used in this group
-                # Assign karts deterministically using modular rotation
-                for i, pilot in enumerate(group):
-                    # Kart = (pilot index in group + race number) mod group size
-                    # +1 because karts are 1-based
-                    kart = i % K + 1
-                    # Make sure pilot hasn't used this kart yet
-                    if kart in pilot_used_karts[pilot] or kart in group_used_karts:
-                        # If so, shift by 1 until free
-                        for shift in range(1, K+1):
-                            kart = ((i + race_idx + shift) % K) + 1
-                            if kart not in pilot_used_karts[pilot] and kart not in group_used_karts:
-                                break
-                            elif shift == K:
-                                raise ValueError(f"No available kart for pilot {pilot} in race {race_idx+1}")
-                    group_map[pilot] = kart
-                    pilot_used_karts[pilot].add(kart)
-                    group_used_karts.add(kart)
+                available_karts = list(range(1, K + 1))
+                random.shuffle(available_karts)
+
+                for pilot in group:
+                    for kart in available_karts:
+                        if kart not in pilot_used_karts[pilot]:
+                            group_map[pilot] = kart
+                            pilot_used_karts[pilot].add(kart)
+                            available_karts.remove(kart)
+                            break
+                    else:
+                        raise ValueError(f"No available kart for pilot {pilot}")
+
                 race_assignment.append(group_map)
             self.karts_per_pilot.append(race_assignment)
+
 
     def test(self, race):
         race = race+1
